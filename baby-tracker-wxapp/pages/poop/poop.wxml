@@ -1,0 +1,52 @@
+<view class="container">
+  <view class="form-group">
+    <view class="form-label">便便形状</view>
+    <view class="btn-group">
+      <view wx:for="{{shapes}}" wx:key="*this" 
+        class="btn-option {{selectedShape === item ? 'selected' : ''}} {{canDeleteShape(item) ? 'tag-with-delete' : ''}}"
+        bindtap="selectShape" data-shape="{{item}}">
+        {{item}}
+        <view wx:if="{{canDeleteShape(item)}}" class="tag-delete" catchtap="deleteShape" data-shape="{{item}}">×</view>
+      </view>
+      <view class="btn-option add-trigger" bindtap="showShapeInput">➕</view>
+    </view>
+    <view wx:if="{{showShapeAdd}}" class="input-row">
+      <input class="input-field" placeholder="输入形状" maxlength="10" value="{{newShape}}" bindinput="onShapeInput"/>
+      <button class="action-btn" bindtap="addShape">添加</button>
+      <button class="action-btn cancel" bindtap="hideShapeInput">取消</button>
+    </view>
+  </view>
+  
+  <view class="form-group">
+    <view class="form-label">便便颜色</view>
+    <view class="btn-group">
+      <view wx:for="{{colors}}" wx:key="*this" 
+        class="btn-option {{selectedColor === item ? 'selected' : ''}}"
+        bindtap="selectColor" data-color="{{item}}">{{item}}</view>
+      <view class="btn-option add-trigger" bindtap="showColorInput">➕</view>
+    </view>
+    <view wx:if="{{showColorAdd}}" class="input-row">
+      <input class="input-field" placeholder="输入颜色" maxlength="10" value="{{newColor}}" bindinput="onColorInput"/>
+      <button class="action-btn" bindtap="confirmColor">确定</button>
+      <button class="action-btn cancel" bindtap="hideColorInput">取消</button>
+    </view>
+  </view>
+  
+  <view class="form-group">
+    <view class="form-label">便便量</view>
+    <view class="btn-group">
+      <view wx:for="{{amounts}}" wx:key="*this" 
+        class="btn-option {{selectedAmount === item ? 'selected' : ''}}"
+        bindtap="selectAmount" data-amount="{{item}}">{{item}}</view>
+    </view>
+  </view>
+  
+  <view class="form-group">
+    <view class="form-label">时间</view>
+    <picker mode="multiSelector" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTimeChange">
+      <view class="input-field">{{timeStr}}</view>
+    </picker>
+  </view>
+  
+  <button class="submit-btn poop" bindtap="submit">{{isEdit ? '保存修改' : '提交记录'}}</button>
+</view>

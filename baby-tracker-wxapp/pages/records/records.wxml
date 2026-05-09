@@ -1,0 +1,55 @@
+<view class="container">
+  <view class="records-header">
+    <view class="records-title">📋 全部记录</view>
+    <view class="records-count">{{records.length}} 条</view>
+  </view>
+  
+  <!-- 统计卡片 -->
+  <view wx:if="{{records.length > 0}}" class="stats-container">
+    <view class="stat-card milk">
+      <view class="stat-icon">🍼</view>
+      <view class="stat-value">{{stats.milk.count}}次</view>
+      <view class="stat-label">喂奶 {{stats.milk.total}}ml</view>
+    </view>
+    
+    <view wx:if="{{stats.poop.count > 0}}" class="stat-card poop">
+      <view class="stat-icon">💩</view>
+      <view class="stat-value">{{stats.poop.count}}次</view>
+      <view class="stat-label">便便</view>
+    </view>
+    
+    <view wx:if="{{stats.supplement.types.length > 0}}" class="stat-card supplement">
+      <view class="stat-icon">💊</view>
+      <view class="stat-value">{{stats.supplement.count}}次</view>
+      <view class="stat-label">补剂</view>
+      <view class="stat-types">{{stats.supplement.typesText}}</view>
+    </view>
+  </view>
+  
+  <!-- 记录列表 -->
+  <view wx:if="{{records.length === 0}}" class="empty-state">
+    <view class="empty-icon">📝</view>
+    <view class="empty-text">还没有记录<br>快去记录宝宝的第一条数据吧！</view>
+  </view>
+  
+  <view wx:for="{{records}}" wx:key="id" class="record-card">
+    <view class="record-actions">
+      <view class="record-action edit" bindtap="editRecord" data-id="{{item.id}}" data-type="{{item.type}}">✏️</view>
+      <view class="record-action delete" bindtap="deleteRecord" data-id="{{item.id}}">✕</view>
+    </view>
+    
+    <view class="record-badge {{item.type}}">
+      <text wx:if="{{item.type === 'milk'}}">🍼 喂奶</text>
+      <text wx:if="{{item.type === 'supplement'}}">💊 补剂</text>
+      <text wx:if="{{item.type === 'poop'}}">💩 便便</text>
+    </view>
+    
+    <view class="record-detail">
+      <text wx:if="{{item.type === 'milk'}}">容量：{{item.amount}} ml</text>
+      <text wx:if="{{item.type === 'supplement'}}">{{item.supplementType}} · {{item.dose}} {{item.unit}}</text>
+      <text wx:if="{{item.type === 'poop'}}">{{item.shape}} · {{item.color}} · {{item.amount}}</text>
+    </view>
+    
+    <view class="record-time">🕐 {{item.timeStr}}</view>
+  </view>
+</view>

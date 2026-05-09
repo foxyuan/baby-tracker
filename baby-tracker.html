@@ -1,0 +1,1666 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>萌娃记录 Baby Tracker</title>
+<style>
+/* ========== 基础重置与变量 ========== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --primary: #FF8C94;
+  --primary-light: #FFE0E3;
+  --secondary: #A8E6CF;
+  --secondary-light: #D4F5E9;
+  --accent: #FFD3B6;
+  --accent-light: #FFF0E5;
+  --purple: #D4A5FF;
+  --purple-light: #F0E0FF;
+  --bg: #FFF9F5;
+  --card: #FFFFFF;
+  --text: #3D3D3D;
+  --text-light: #888;
+  --danger: #FF6B6B;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --radius: 16px;
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 90px;
+}
+
+/* ========== 页面切换 ========== */
+.page { display: none; padding: 20px 16px; animation: fadeIn 0.25s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ========== 首页 ========== */
+.home-header {
+  text-align: center;
+  padding: 30px 0 10px;
+}
+.home-header h1 {
+  font-size: 28px;
+  color: var(--primary);
+  margin-bottom: 4px;
+}
+.home-header p {
+  font-size: 14px;
+  color: var(--text-light);
+}
+.home-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 24px;
+}
+.home-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s, box-shadow 0.15s;
+  color: #fff;
+}
+.home-btn:active { transform: scale(0.97); }
+.home-btn .icon {
+  width: 48px; height: 48px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px;
+  background: rgba(255,255,255,0.3);
+}
+.home-btn.milk { background: linear-gradient(135deg, #FF8C94, #FF6F7E); }
+.home-btn.supplement { background: linear-gradient(135deg, #A8E6CF, #6BCB9E); }
+.home-btn.poop { background: linear-gradient(135deg, #D4A5FF, #B07CFF); }
+
+/* ========== 滚动选择器 ========== */
+.scroll-picker-wrapper {
+  position: relative;
+  margin: 8px 0;
+}
+.scroll-picker-mask {
+  position: absolute;
+  left: 0; right: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.scroll-picker-mask-top {
+  top: 0; height: 48px;
+  background: linear-gradient(to bottom, var(--bg), transparent);
+  border-radius: 14px 14px 0 0;
+}
+.scroll-picker-mask-bottom {
+  bottom: 0; height: 48px;
+  background: linear-gradient(to top, var(--bg), transparent);
+  border-radius: 0 0 14px 14px;
+}
+.scroll-picker-highlight {
+  position: absolute;
+  left: 8px; right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 48px;
+  border: 2px solid var(--primary-light);
+  border-radius: 12px;
+  background: var(--primary-light);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 1;
+}
+.scroll-picker {
+  height: 144px; /* 3行 × 48px */
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px #eee;
+}
+.scroll-picker::-webkit-scrollbar { display: none; }
+.scroll-picker-item {
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-light);
+  scroll-snap-align: center;
+  cursor: pointer;
+  transition: color 0.15s, transform 0.15s;
+  user-select: none;
+}
+.scroll-picker-item.active {
+  color: var(--primary);
+  transform: scale(1.1);
+  font-weight: 700;
+}
+.scroll-picker-unit {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+/* ========== 通用表单样式 ========== */
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.back-btn {
+  width: 36px; height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.back-btn:active { transform: scale(0.9); }
+.form-header h2 { font-size: 22px; }
+
+.form-group { margin-bottom: 20px; }
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 8px;
+}
+
+/* 快捷按钮组 */
+.btn-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-option {
+  padding: 10px 18px;
+  border: 2px solid #eee;
+  border-radius: 25px;
+  background: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text);
+}
+.btn-option:active { transform: scale(0.95); }
+.btn-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+/* 输入框 */
+.input-field {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+.input-field:focus { border-color: var(--primary); }
+
+/* 行内输入组 */
+.inline-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.inline-group .input-field { flex: 1; }
+.inline-group .btn-option { flex-shrink: 0; }
+
+/* 自定义标签输入 */
+.custom-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.custom-input-row .input-field { flex: 1; }
+.add-tag-btn {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--secondary);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.add-tag-btn:active { transform: scale(0.95); }
+.add-tag-btn.cancel-btn { background: #ccc; }
+.add-tag-btn.cancel-btn:active { background: #bbb; }
+
+/* 加号按钮 */
+.add-tag-trigger {
+  border-style: dashed !important;
+  font-size: 18px !important;
+  padding: 8px 14px !important;
+}
+
+/* 可删除的标签 */
+.tag-with-delete {
+  position: relative;
+  padding-right: 22px !important;
+}
+.tag-delete {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 11px;
+  border: 2px solid #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.tag-delete:active { transform: scale(0.9); background: #ff5252; }
+
+/* 时间输入 */
+input[type="datetime-local"] {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #eee;
+  border-radius: 12px;
+  font-size: 15px;
+  outline: none;
+  color: var(--text);
+  background: #fff;
+}
+input[type="datetime-local"]:focus { border-color: var(--primary); }
+
+/* 提交按钮 */
+.submit-btn {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: transform 0.15s;
+}
+.submit-btn:active { transform: scale(0.97); }
+.submit-btn.milk { background: linear-gradient(135deg, #FF8C94, #FF6F7E); }
+.submit-btn.supplement { background: linear-gradient(135deg, #A8E6CF, #6BCB9E); }
+.submit-btn.poop { background: linear-gradient(135deg, #D4A5FF, #B07CFF); }
+
+/* ========== 记录列表 ========== */
+.records-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.records-header h2 { font-size: 22px; }
+.record-count {
+  font-size: 13px;
+  color: var(--text-light);
+  background: #f0f0f0;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.record-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  position: relative;
+  animation: fadeIn 0.2s ease;
+}
+.record-card .type-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.type-badge.milk { background: linear-gradient(135deg, #FF8C94, #FF6F7E); }
+.type-badge.supplement { background: linear-gradient(135deg, #A8E6CF, #6BCB9E); }
+.type-badge.poop { background: linear-gradient(135deg, #D4A5FF, #B07CFF); }
+
+/* ========== 日期选择器 ========== */
+.date-picker-wrapper {
+  margin-bottom: 16px;
+  position: relative;
+}
+.date-picker-wrapper::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 30px;
+  background: linear-gradient(to right, transparent, var(--bg));
+  pointer-events: none;
+  z-index: 1;
+}
+.date-picker {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px 8px;
+  scrollbar-width: none;
+}
+.date-picker::-webkit-scrollbar { display: none; }
+.date-picker-item {
+  flex-shrink: 0;
+  width: 56px;
+  padding: 10px 4px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  text-align: center;
+  scroll-snap-align: start;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+}
+.date-picker-item:active { transform: scale(0.95); }
+.date-picker-item.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(255,140,148,0.3);
+}
+.date-picker-item .dp-weekday {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 2px;
+}
+.date-picker-item.active .dp-weekday { color: rgba(255,255,255,0.8); }
+.date-picker-item .dp-day {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.date-picker-item.active .dp-day { color: #fff; }
+.date-picker-item .dp-month {
+  font-size: 10px;
+  color: var(--text-light);
+  margin-top: 1px;
+}
+.date-picker-item.active .dp-month { color: rgba(255,255,255,0.7); }
+
+/* ========== 统计卡片 ========== */
+.stats-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.stat-card {
+  flex: 1;
+  min-width: 100px;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 14px 12px;
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.stat-card.milk {
+  background: linear-gradient(135deg, #FFF0F2, #FFE8EB);
+  border-left: 4px solid #FF8C94;
+}
+.stat-card.poop {
+  background: linear-gradient(135deg, #F5F0FF, #EDE5FF);
+  border-left: 4px solid #D4A5FF;
+}
+.stat-card.supplement {
+  background: linear-gradient(135deg, #E8F9F2, #DFF5EC);
+  border-left: 4px solid #A8E6CF;
+}
+.stat-icon { font-size: 22px; margin-bottom: 4px; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.stat-label { font-size: 12px; color: var(--text-light); }
+.stat-types { font-size: 11px; color: var(--text-light); margin-top: 4px; line-height: 1.4; }
+
+.record-card .detail { font-size: 15px; line-height: 1.6; margin-bottom: 6px; }
+.record-card .time { font-size: 12px; color: var(--text-light); }
+.record-card .action-btns {
+  position: absolute;
+  top: 12px; right: 12px;
+  display: flex;
+  gap: 6px;
+}
+.record-card .action-btn {
+  width: 30px; height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: #f5f5f5;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.record-card .action-btn:active { transform: scale(0.9); }
+.record-card .edit-btn { color: #4A90D9; }
+.record-card .edit-btn:active { background: #e0ecf8; }
+.record-card .delete-btn { color: var(--danger); }
+.record-card .delete-btn:active { background: #ffe0e0; }
+
+/* ========== 日期分组标题 ========== */
+.date-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+.date-divider:first-child { margin-top: 0; }
+.date-divider::before,
+.date-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: #e8e8e8;
+}
+.date-divider .date-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+.date-divider .date-dot.today { background: var(--primary); }
+.date-divider .date-dot.history { background: #ccc; }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-light);
+}
+.empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 15px; }
+
+/* ========== Toast 提示 ========== */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: #333;
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 30px;
+  font-size: 15px;
+  font-weight: 600;
+  z-index: 999;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ========== 底部导航 ========== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  background: #fff;
+  box-shadow: 0 -2px 10px rgba(0,0,0,0.06);
+  z-index: 100;
+}
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--text-light);
+  font-size: 11px;
+  gap: 2px;
+  transition: color 0.15s;
+}
+.nav-item .nav-icon { font-size: 22px; }
+.nav-item.active { color: var(--primary); }
+.nav-item:active { opacity: 0.7; }
+
+/* ========== 自定义确认弹窗 ========== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 24px 20px;
+  width: 85%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  animation: modalPop 0.25s ease;
+}
+@keyframes modalPop { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.modal-icon { font-size: 40px; margin-bottom: 12px; }
+.modal-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--text); }
+.modal-msg { font-size: 14px; color: var(--text-light); margin-bottom: 20px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 10px; }
+.modal-actions button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+.modal-actions button:active { transform: scale(0.95); }
+.modal-cancel {
+  background: #f0f0f0;
+  color: var(--text);
+}
+.modal-confirm {
+  background: var(--danger);
+  color: #fff;
+}
+
+/* ========== 底部导航占位 ========== */
+.bottom-spacer { height: 65px; }
+</style>
+</head>
+<body>
+
+<!-- Toast 提示 -->
+<div class="toast" id="toast"></div>
+
+<!-- 自定义确认弹窗 -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-icon" id="modal-icon">⚠️</div>
+    <div class="modal-title" id="modal-title">确认删除</div>
+    <div class="modal-msg" id="modal-msg">确定要删除这条记录吗？删除后无法恢复。</div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeModal()">取消</button>
+      <button class="modal-confirm" id="modal-confirm-btn" onclick="confirmModal()">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== 首页 ==================== -->
+<div class="page active" id="page-home">
+  <div class="home-header">
+    <h1>🍼 萌娃记录</h1>
+    <p>Baby Tracker · 记录宝宝每一天</p>
+  </div>
+  <div class="home-buttons">
+    <button class="home-btn milk" onclick="showPage('page-milk')">
+      <div class="icon">🍼</div>
+      <span>喂奶记录</span>
+    </button>
+    <button class="home-btn supplement" onclick="showPage('page-supplement')">
+      <div class="icon">💊</div>
+      <span>补剂记录</span>
+    </button>
+    <button class="home-btn poop" onclick="showPage('page-poop')">
+      <div class="icon">💩</div>
+      <span>便便记录</span>
+    </button>
+  </div>
+</div>
+
+<!-- ==================== 喂奶记录 ==================== -->
+<div class="page" id="page-milk">
+  <div class="form-header">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <h2>🍼 喂奶记录</h2>
+  </div>
+  <div class="form-group">
+    <label class="form-label">容量（ml）</label>
+    <div class="scroll-picker-wrapper">
+      <div class="scroll-picker-mask scroll-picker-mask-top"></div>
+      <div class="scroll-picker-mask scroll-picker-mask-bottom"></div>
+      <div class="scroll-picker-highlight"></div>
+      <div class="scroll-picker" id="milk-picker">
+        <!-- 顶部占位 -->
+        <div class="scroll-picker-item"></div>
+        <!-- 动态渲染 -->
+      </div>
+    </div>
+    <div class="scroll-picker-unit">ml</div>
+    <input type="hidden" id="milk-amount">
+  </div>
+  <div class="form-group">
+    <label class="form-label">时间</label>
+    <input type="datetime-local" id="milk-time">
+  </div>
+  <button class="submit-btn milk" onclick="submitMilk()">提交记录</button>
+</div>
+
+<!-- ==================== 补剂记录 ==================== -->
+<div class="page" id="page-supplement">
+  <div class="form-header">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <h2>💊 补剂记录</h2>
+  </div>
+  <div class="form-group">
+    <label class="form-label">补剂类型</label>
+    <div class="btn-group" id="supplement-type-btns">
+      <!-- 动态渲染 -->
+      <!-- 加号按钮 -->
+      <button class="btn-option add-tag-trigger" onclick="showAddTagInput()" title="添加自定义补剂">➕</button>
+    </div>
+    <div class="custom-input-row" id="add-tag-input-row" style="display: none;">
+      <input type="text" class="input-field" id="new-supplement-tag" placeholder="输入补剂名称" maxlength="10">
+      <button class="add-tag-btn" onclick="addSupplementTag()">添加</button>
+      <button class="add-tag-btn cancel-btn" onclick="hideAddTagInput()">取消</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">剂量</label>
+    <div class="inline-group">
+      <input type="number" class="input-field" id="supplement-dose" placeholder="数值" min="0" step="0.5">
+      <div class="btn-group" id="supplement-unit-btns">
+        <button class="btn-option selected" onclick="selectUnit(this, '片')">片</button>
+        <button class="btn-option" onclick="selectUnit(this, '粒')">粒</button>
+        <button class="btn-option" onclick="selectUnit(this, '毫升')">毫升</button>
+      </div>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">时间</label>
+    <input type="datetime-local" id="supplement-time">
+  </div>
+  <button class="submit-btn supplement" onclick="submitSupplement()">提交记录</button>
+</div>
+
+<!-- ==================== 便便记录 ==================== -->
+<div class="page" id="page-poop">
+  <div class="form-header">
+    <button class="back-btn" onclick="goBack()">←</button>
+    <h2>💩 便便记录</h2>
+  </div>
+  <div class="form-group">
+    <label class="form-label">便便形状</label>
+    <div class="btn-group" id="poop-shape-btns">
+      <!-- 动态渲染 -->
+    </div>
+    <div class="custom-input-row" id="poop-shape-input-row" style="display: none;">
+      <input type="text" class="input-field" id="poop-shape-custom" placeholder="输入形状" maxlength="10">
+      <button class="add-tag-btn" onclick="addPoopShapeTag()">添加</button>
+      <button class="add-tag-btn cancel-btn" onclick="hidePoopShapeInput()">取消</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">便便颜色</label>
+    <div class="btn-group" id="poop-color-btns">
+      <button class="btn-option" onclick="selectColor(this, '黑色')">黑色</button>
+      <button class="btn-option" onclick="selectColor(this, '绿色')">绿色</button>
+      <button class="btn-option" onclick="selectColor(this, '黄色')">黄色</button>
+      <button class="btn-option add-tag-trigger" onclick="showPoopColorInput()" title="添加自定义颜色">➕</button>
+    </div>
+    <div class="custom-input-row" id="poop-color-input-row" style="display: none;">
+      <input type="text" class="input-field" id="poop-color-custom" placeholder="输入颜色" maxlength="10">
+      <button class="add-tag-btn" onclick="confirmPoopColorCustom()">确定</button>
+      <button class="add-tag-btn cancel-btn" onclick="hidePoopColorInput()">取消</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">便便量</label>
+    <div class="btn-group" id="poop-amount-btns">
+      <button class="btn-option" onclick="selectPoopAmount(this, '量少')">量少</button>
+      <button class="btn-option" onclick="selectPoopAmount(this, '量中等')">量中等</button>
+      <button class="btn-option" onclick="selectPoopAmount(this, '量多')">量多</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">时间</label>
+    <input type="datetime-local" id="poop-time">
+  </div>
+  <button class="submit-btn poop" onclick="submitPoop()">提交记录</button>
+</div>
+
+<!-- ==================== 记录列表 ==================== -->
+<div class="page" id="page-records">
+  <div class="records-header">
+    <h2>📋 全部记录</h2>
+    <span class="record-count" id="record-count">0 条</span>
+  </div>
+  <!-- 日期选择器 -->
+  <div class="date-picker-wrapper">
+    <div class="date-picker" id="date-picker">
+      <!-- 动态渲染日期按钮 -->
+    </div>
+  </div>
+  <!-- 统计卡片 -->
+  <div class="stats-container" id="stats-container">
+    <!-- 动态渲染 -->
+  </div>
+  <div id="records-list">
+    <!-- 动态渲染 -->
+  </div>
+</div>
+
+<!-- ==================== 底部导航 ==================== -->
+<div class="bottom-nav">
+  <button class="nav-item active" id="nav-home" onclick="showPage('page-home')">
+    <span class="nav-icon">🏠</span>
+    <span>首页</span>
+  </button>
+  <button class="nav-item" id="nav-records" onclick="showPage('page-records')">
+    <span class="nav-icon">📋</span>
+    <span>记录</span>
+  </button>
+</div>
+
+<script>
+/* ========== 数据管理 ========== */
+const STORAGE_KEY = 'baby_tracker_records';
+const TAGS_KEY = 'baby_tracker_supplement_tags';
+
+// 默认补剂标签
+const DEFAULT_SUPPLEMENT_TAGS = ['维D', 'AD', '益生菌', 'DHA'];
+
+// 编辑状态：null 表示新建模式，否则为正在编辑的记录 id
+let editingRecordId = null;
+
+// 获取所有记录
+function getRecords() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+  } catch { return []; }
+}
+
+// 保存所有记录
+function saveRecords(records) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+// 获取自定义补剂标签
+function getSupplementTags() {
+  try {
+    const tags = JSON.parse(localStorage.getItem(TAGS_KEY));
+    return tags && tags.length ? tags : DEFAULT_SUPPLEMENT_TAGS;
+  } catch { return DEFAULT_SUPPLEMENT_TAGS; }
+}
+
+// 保存自定义补剂标签
+function saveSupplementTags(tags) {
+  localStorage.setItem(TAGS_KEY, JSON.stringify(tags));
+}
+
+/* ========== 自定义确认弹窗 ========== */
+let modalCallback = null;
+
+function showModal(options) {
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-icon').textContent = options.icon || '⚠️';
+  document.getElementById('modal-title').textContent = options.title || '确认操作';
+  document.getElementById('modal-msg').textContent = options.msg || '确定要执行此操作吗？';
+  const confirmBtn = document.getElementById('modal-confirm-btn');
+  confirmBtn.textContent = options.confirmText || '确认';
+  confirmBtn.style.background = options.confirmColor || 'var(--danger)';
+  modalCallback = options.onConfirm || null;
+  overlay.classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('show');
+  modalCallback = null;
+}
+
+function confirmModal() {
+  if (modalCallback) modalCallback();
+  closeModal();
+}
+
+// 点击遮罩层关闭
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+/* ========== 页面切换 ========== */
+function showPage(pageId, isEdit) {
+  // 隐藏所有页面
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // 显示目标页面
+  document.getElementById(pageId).classList.add('active');
+
+  // 更新底部导航高亮
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (pageId === 'page-home' || pageId.startsWith('page-milk') || pageId.startsWith('page-supplement') || pageId.startsWith('page-poop')) {
+    document.getElementById('nav-home').classList.add('active');
+  } else if (pageId === 'page-records') {
+    document.getElementById('nav-records').classList.add('active');
+  }
+
+  // 进入表单页时初始化
+  if (pageId === 'page-milk') {
+    if (!isEdit) { setDefaultTime('milk-time'); resetMilkForm(); }
+    // 滚动到当前选中值
+    setTimeout(() => scrollToMilkValue(selectedMilkAmount), 50);
+  } else if (pageId === 'page-supplement') {
+    if (!isEdit) { setDefaultTime('supplement-time'); resetSupplementForm(); }
+    renderSupplementTags();
+  } else if (pageId === 'page-poop') {
+    if (!isEdit) { setDefaultTime('poop-time'); resetPoopForm(); }
+    renderPoopShapes();
+  } else if (pageId === 'page-records') {
+    renderRecords();
+  }
+}
+
+/* ========== 返回按钮逻辑 ========== */
+function goBack() {
+  // 编辑模式返回记录列表，新建模式返回首页
+  if (editingRecordId) {
+    editingRecordId = null; // 清除编辑状态
+    showPage('page-records');
+  } else {
+    showPage('page-home');
+  }
+}
+
+/* ========== 时间工具 ========== */
+function getDefaultTimeStr() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+}
+
+function setDefaultTime(inputId) {
+  document.getElementById(inputId).value = getDefaultTimeStr();
+}
+
+function formatTime(isoStr) {
+  const d = new Date(isoStr);
+  const pad = n => String(n).padStart(2, '0');
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const hour = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${month}月${day}日 ${hour}:${min}`;
+}
+
+/* ========== Toast 提示 ========== */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ========== 喂奶记录 ========== */
+let selectedMilkAmount = 0;
+const MILK_MIN = 10;
+const MILK_MAX = 300;
+const MILK_STEP = 10;
+const ITEM_HEIGHT = 48;
+
+// 初始化滚动选择器
+function initMilkPicker() {
+  const picker = document.getElementById('milk-picker');
+  // 保留顶部占位
+  const placeholder = picker.querySelector('.scroll-picker-item');
+  picker.innerHTML = '';
+  picker.appendChild(placeholder);
+  // 生成数值项
+  for (let v = MILK_MIN; v <= MILK_MAX; v += MILK_STEP) {
+    const item = document.createElement('div');
+    item.className = 'scroll-picker-item';
+    item.textContent = v;
+    item.dataset.value = v;
+    item.addEventListener('click', () => {
+      scrollToMilkValue(v);
+    });
+    picker.appendChild(item);
+  }
+  // 底部占位
+  const bottomPlaceholder = document.createElement('div');
+  bottomPlaceholder.className = 'scroll-picker-item';
+  picker.appendChild(bottomPlaceholder);
+
+  // 监听滚动
+  picker.addEventListener('scroll', debounce(onMilkPickerScroll, 50));
+  picker.addEventListener('scrollend', onMilkPickerScroll);
+}
+
+function debounce(fn, delay) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+function onMilkPickerScroll() {
+  const picker = document.getElementById('milk-picker');
+  const scrollTop = picker.scrollTop;
+  // 中间行 = scrollTop + ITEM_HEIGHT（顶部占位高度）
+  const centerIndex = Math.round((scrollTop) / ITEM_HEIGHT);
+  const items = picker.querySelectorAll('.scroll-picker-item[data-value]');
+  items.forEach((item, i) => {
+    item.classList.toggle('active', i === centerIndex);
+  });
+  if (items[centerIndex]) {
+    selectedMilkAmount = parseInt(items[centerIndex].dataset.value);
+    document.getElementById('milk-amount').value = selectedMilkAmount;
+  }
+}
+
+function scrollToMilkValue(value) {
+  const picker = document.getElementById('milk-picker');
+  const items = picker.querySelectorAll('.scroll-picker-item[data-value]');
+  let targetIndex = 0;
+  items.forEach((item, i) => {
+    if (parseInt(item.dataset.value) === value) targetIndex = i;
+  });
+  picker.scrollTo({ top: targetIndex * ITEM_HEIGHT, behavior: 'smooth' });
+  selectedMilkAmount = value;
+  document.getElementById('milk-amount').value = value;
+}
+
+function resetMilkForm() {
+  const lastMilkAmount = getLastMilkAmount();
+  if (lastMilkAmount) {
+    selectedMilkAmount = lastMilkAmount;
+    document.getElementById('milk-amount').value = lastMilkAmount;
+  } else {
+    selectedMilkAmount = MILK_MIN;
+    document.getElementById('milk-amount').value = MILK_MIN;
+  }
+  editingRecordId = null;
+  updateMilkSubmitBtn();
+}
+
+// 获取上次喂奶容量
+function getLastMilkAmount() {
+  const records = getRecords();
+  const milkRecords = records.filter(r => r.type === 'milk');
+  if (milkRecords.length === 0) return 0;
+  milkRecords.sort((a, b) => new Date(b.time) - new Date(a.time));
+  return milkRecords[0].amount || 0;
+}
+
+function updateMilkSubmitBtn() {
+  const btn = document.querySelector('#page-milk .submit-btn');
+  btn.textContent = editingRecordId ? '保存修改' : '提交记录';
+}
+
+// 回填喂奶表单数据（编辑模式）
+function fillMilkForm(record) {
+  editingRecordId = record.id;
+  const amount = record.amount;
+  document.getElementById('milk-time').value = record.time;
+  selectedMilkAmount = amount;
+  document.getElementById('milk-amount').value = amount;
+  // 滚动到对应值
+  scrollToMilkValue(amount);
+  updateMilkSubmitBtn();
+}
+
+function submitMilk() {
+  const amount = parseFloat(document.getElementById('milk-amount').value);
+  const time = document.getElementById('milk-time').value;
+
+  if (!amount || amount <= 0) { showToast('请输入喂奶容量'); return; }
+  if (!time) { showToast('请选择时间'); return; }
+
+  const wasEditing = !!editingRecordId;
+  const records = getRecords();
+
+  if (editingRecordId) {
+    // 编辑模式：更新已有记录
+    const idx = records.findIndex(r => r.id === editingRecordId);
+    if (idx !== -1) {
+      records[idx].amount = amount;
+      records[idx].time = time;
+    }
+    saveRecords(records);
+    showToast('✅ 修改成功');
+  } else {
+    // 新建模式
+    records.unshift({
+      id: Date.now(),
+      type: 'milk',
+      amount: amount,
+      time: time
+    });
+    saveRecords(records);
+    showToast('✅ 记录成功');
+  }
+  editingRecordId = null;
+  showPage('page-records');
+}
+
+/* ========== 补剂记录 ========== */
+let selectedSupplementType = '';
+let selectedSupplementUnit = '片';
+
+function renderSupplementTags() {
+  const tags = getSupplementTags();
+  const container = document.getElementById('supplement-type-btns');
+  // 渲染标签（带删除角标）和加号按钮
+  container.innerHTML = tags.map(tag =>
+    `<button class="btn-option tag-with-delete ${selectedSupplementType === tag ? 'selected' : ''}" onclick="selectSupplementType(this, '${tag}')">
+      ${tag}
+      <span class="tag-delete" onclick="event.stopPropagation(); deleteSupplementTag('${tag}')">×</span>
+    </button>`
+  ).join('') + `<button class="btn-option add-tag-trigger" onclick="showAddTagInput()" title="添加自定义补剂">➕</button>`;
+}
+
+function selectSupplementType(btn, type) {
+  const isSelected = btn.classList.contains('selected');
+  document.querySelectorAll('#supplement-type-btns .btn-option').forEach(b => b.classList.remove('selected'));
+  if (!isSelected) {
+    btn.classList.add('selected');
+    selectedSupplementType = type;
+  } else {
+    selectedSupplementType = '';
+  }
+}
+
+function selectUnit(btn, unit) {
+  document.querySelectorAll('#supplement-unit-btns .btn-option').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedSupplementUnit = unit;
+}
+
+// 显示/隐藏自定义标签输入框
+function showAddTagInput() {
+  document.getElementById('add-tag-input-row').style.display = 'flex';
+  document.getElementById('new-supplement-tag').focus();
+}
+
+function hideAddTagInput() {
+  document.getElementById('add-tag-input-row').style.display = 'none';
+  document.getElementById('new-supplement-tag').value = '';
+}
+
+function addSupplementTag() {
+  const input = document.getElementById('new-supplement-tag');
+  const tag = input.value.trim();
+  if (!tag) { showToast('请输入补剂名称'); return; }
+
+  const tags = getSupplementTags();
+  if (tags.includes(tag)) { showToast('该标签已存在'); return; }
+
+  tags.push(tag);
+  saveSupplementTags(tags);
+  input.value = '';
+  hideAddTagInput(); // 添加完成后隐藏输入框
+  renderSupplementTags();
+  showToast('✅ 标签已添加');
+}
+
+// 删除补剂标签
+function deleteSupplementTag(tag) {
+  showModal({
+    icon: '🗑️',
+    title: '删除标签',
+    msg: `确定要删除「${tag}」这个补剂标签吗？`,
+    confirmText: '删除',
+    confirmColor: 'var(--danger)',
+    onConfirm: () => {
+      let tags = getSupplementTags();
+      tags = tags.filter(t => t !== tag);
+      saveSupplementTags(tags);
+      // 如果删除的是当前选中的标签，清除选中状态
+      if (selectedSupplementType === tag) {
+        selectedSupplementType = '';
+      }
+      renderSupplementTags();
+      showToast('标签已删除');
+    }
+  });
+}
+
+function resetSupplementForm() {
+  selectedSupplementType = '';
+  selectedSupplementUnit = '片';
+  document.getElementById('supplement-dose').value = '1'; // 默认剂量 1
+  hideAddTagInput(); // 确保输入框隐藏
+  document.querySelectorAll('#supplement-unit-btns .btn-option').forEach((b, i) => {
+    b.classList.toggle('selected', i === 0);
+  });
+  editingRecordId = null;
+  updateSupplementSubmitBtn();
+}
+
+function updateSupplementSubmitBtn() {
+  const btn = document.querySelector('#page-supplement .submit-btn');
+  btn.textContent = editingRecordId ? '保存修改' : '提交记录';
+}
+
+// 回填补剂表单数据（编辑模式）
+function fillSupplementForm(record) {
+  editingRecordId = record.id;
+  selectedSupplementType = record.supplementType;
+  selectedSupplementUnit = record.unit;
+  document.getElementById('supplement-dose').value = record.dose;
+  document.getElementById('supplement-time').value = record.time;
+  // 选中匹配的单位按钮
+  document.querySelectorAll('#supplement-unit-btns .btn-option').forEach(b => {
+    b.classList.toggle('selected', b.textContent === record.unit);
+  });
+  updateSupplementSubmitBtn();
+}
+
+function submitSupplement() {
+  const type = selectedSupplementType;
+  const dose = parseFloat(document.getElementById('supplement-dose').value);
+  const unit = selectedSupplementUnit;
+  const time = document.getElementById('supplement-time').value;
+
+  if (!type) { showToast('请选择补剂类型'); return; }
+  if (!dose || dose <= 0) { showToast('请输入剂量'); return; }
+  if (!time) { showToast('请选择时间'); return; }
+
+  const wasEditing = !!editingRecordId;
+  const records = getRecords();
+
+  if (editingRecordId) {
+    const idx = records.findIndex(r => r.id === editingRecordId);
+    if (idx !== -1) {
+      records[idx].supplementType = type;
+      records[idx].dose = dose;
+      records[idx].unit = unit;
+      records[idx].time = time;
+    }
+    saveRecords(records);
+    showToast('✅ 修改成功');
+  } else {
+    records.unshift({
+      id: Date.now(),
+      type: 'supplement',
+      supplementType: type,
+      dose: dose,
+      unit: unit,
+      time: time
+    });
+    saveRecords(records);
+    showToast('✅ 记录成功');
+  }
+  editingRecordId = null;
+  showPage('page-records');
+}
+
+/* ========== 便便记录 ========== */
+let selectedShape = '';
+let selectedColor = '';
+let selectedPoopAmount = '';
+
+// 形状标签存储
+const POOP_SHAPE_KEY = 'baby_tracker_poop_shapes';
+const DEFAULT_POOP_SHAPES = ['正常', '偏干', '偏稀', '有奶瓣', '含血便'];
+const UNDELETABLE_SHAPES = ['正常', '偏干', '偏稀']; // 不可删除的形状
+
+function getPoopShapes() {
+  try {
+    const shapes = JSON.parse(localStorage.getItem(POOP_SHAPE_KEY));
+    return shapes && shapes.length ? shapes : DEFAULT_POOP_SHAPES;
+  } catch { return DEFAULT_POOP_SHAPES; }
+}
+
+function savePoopShapes(shapes) {
+  localStorage.setItem(POOP_SHAPE_KEY, JSON.stringify(shapes));
+}
+
+function renderPoopShapes() {
+  const shapes = getPoopShapes();
+  const container = document.getElementById('poop-shape-btns');
+  container.innerHTML = shapes.map(shape => {
+    const canDelete = !UNDELETABLE_SHAPES.includes(shape);
+    return `<button class="btn-option ${canDelete ? 'tag-with-delete' : ''} ${selectedShape === shape ? 'selected' : ''}" onclick="selectShape(this, '${shape}')">
+      ${shape}
+      ${canDelete ? `<span class="tag-delete" onclick="event.stopPropagation(); deletePoopShape('${shape}')">×</span>` : ''}
+    </button>`;
+  }).join('') + `<button class="btn-option add-tag-trigger" onclick="showPoopShapeInput()" title="添加自定义形状">➕</button>`;
+}
+
+function selectShape(btn, shape) {
+  const isSelected = btn.classList.contains('selected');
+  document.querySelectorAll('#poop-shape-btns .btn-option').forEach(b => b.classList.remove('selected'));
+  if (!isSelected) {
+    btn.classList.add('selected');
+    selectedShape = shape;
+  } else {
+    selectedShape = '';
+  }
+  hidePoopShapeInput();
+}
+
+function selectColor(btn, color) {
+  const isSelected = btn.classList.contains('selected');
+  document.querySelectorAll('#poop-color-btns .btn-option').forEach(b => b.classList.remove('selected'));
+  if (!isSelected) {
+    btn.classList.add('selected');
+    selectedColor = color;
+  } else {
+    selectedColor = '';
+  }
+  hidePoopColorInput();
+}
+
+function selectPoopAmount(btn, amount) {
+  const isSelected = btn.classList.contains('selected');
+  document.querySelectorAll('#poop-amount-btns .btn-option').forEach(b => b.classList.remove('selected'));
+  if (!isSelected) {
+    btn.classList.add('selected');
+    selectedPoopAmount = amount;
+  } else {
+    selectedPoopAmount = '';
+  }
+}
+
+// 形状输入框显示/隐藏
+function showPoopShapeInput() {
+  document.getElementById('poop-shape-input-row').style.display = 'flex';
+  document.getElementById('poop-shape-custom').focus();
+}
+
+function hidePoopShapeInput() {
+  document.getElementById('poop-shape-input-row').style.display = 'none';
+  document.getElementById('poop-shape-custom').value = '';
+}
+
+function addPoopShapeTag() {
+  const input = document.getElementById('poop-shape-custom');
+  const shape = input.value.trim();
+  if (!shape) { showToast('请输入形状名称'); return; }
+
+  const shapes = getPoopShapes();
+  if (shapes.includes(shape)) { showToast('该形状已存在'); return; }
+
+  shapes.push(shape);
+  savePoopShapes(shapes);
+  hidePoopShapeInput();
+  renderPoopShapes();
+  showToast('✅ 形状已添加');
+}
+
+function deletePoopShape(shape) {
+  showModal({
+    icon: '🗑️',
+    title: '删除形状',
+    msg: `确定要删除「${shape}」这个形状标签吗？`,
+    confirmText: '删除',
+    confirmColor: 'var(--danger)',
+    onConfirm: () => {
+      let shapes = getPoopShapes();
+      shapes = shapes.filter(s => s !== shape);
+      savePoopShapes(shapes);
+      if (selectedShape === shape) selectedShape = '';
+      renderPoopShapes();
+      showToast('形状已删除');
+    }
+  });
+}
+
+// 颜色输入框显示/隐藏
+function showPoopColorInput() {
+  document.getElementById('poop-color-input-row').style.display = 'flex';
+  document.getElementById('poop-color-custom').focus();
+}
+
+function hidePoopColorInput() {
+  document.getElementById('poop-color-input-row').style.display = 'none';
+  document.getElementById('poop-color-custom').value = '';
+}
+
+function confirmPoopColorCustom() {
+  const input = document.getElementById('poop-color-custom');
+  const color = input.value.trim();
+  if (!color) { showToast('请输入颜色'); return; }
+  // 直接选中自定义颜色
+  selectedColor = color;
+  document.querySelectorAll('#poop-color-btns .btn-option').forEach(b => b.classList.remove('selected'));
+  hidePoopColorInput();
+}
+
+function resetPoopForm() {
+  // 默认选中：正常、黄色、量中等
+  selectedShape = '正常';
+  selectedColor = '黄色';
+  selectedPoopAmount = '量中等';
+  hidePoopShapeInput();
+  hidePoopColorInput();
+  // 清除所有选中状态
+  document.querySelectorAll('#poop-shape-btns .btn-option, #poop-color-btns .btn-option, #poop-amount-btns .btn-option')
+    .forEach(b => b.classList.remove('selected'));
+  // 选中默认值对应的按钮
+  document.querySelectorAll('#poop-shape-btns .btn-option').forEach(b => {
+    if (b.textContent === '正常') b.classList.add('selected');
+  });
+  document.querySelectorAll('#poop-color-btns .btn-option').forEach(b => {
+    if (b.textContent === '黄色') b.classList.add('selected');
+  });
+  document.querySelectorAll('#poop-amount-btns .btn-option').forEach(b => {
+    if (b.textContent === '量中等') b.classList.add('selected');
+  });
+  editingRecordId = null;
+  updatePoopSubmitBtn();
+}
+
+function updatePoopSubmitBtn() {
+  const btn = document.querySelector('#page-poop .submit-btn');
+  btn.textContent = editingRecordId ? '保存修改' : '提交记录';
+}
+
+// 回填便便表单数据（编辑模式）
+function fillPoopForm(record) {
+  editingRecordId = record.id;
+  selectedShape = record.shape;
+  selectedColor = record.color;
+  selectedPoopAmount = record.amount;
+  document.getElementById('poop-time').value = record.time;
+
+  // 匹配形状按钮
+  renderPoopShapes();
+
+  // 匹配颜色按钮或填入自定义
+  const colorBtns = document.querySelectorAll('#poop-color-btns .btn-option');
+  let colorMatched = false;
+  colorBtns.forEach(b => {
+    if (b.textContent === record.color) {
+      b.classList.add('selected');
+      colorMatched = true;
+    } else {
+      b.classList.remove('selected');
+    }
+  });
+  if (!colorMatched) {
+    selectedColor = record.color;
+  }
+
+  // 匹配量按钮
+  document.querySelectorAll('#poop-amount-btns .btn-option').forEach(b => {
+    b.classList.toggle('selected', b.textContent === record.amount);
+  });
+
+  updatePoopSubmitBtn();
+}
+
+function submitPoop() {
+  const shape = selectedShape;
+  const color = selectedColor || document.getElementById('poop-color-custom').value.trim();
+  const amount = selectedPoopAmount;
+  const time = document.getElementById('poop-time').value;
+
+  if (!shape) { showToast('请选择便便形状'); return; }
+  if (!color) { showToast('请选择或输入便便颜色'); return; }
+  if (!amount) { showToast('请选择便便量'); return; }
+  if (!time) { showToast('请选择时间'); return; }
+
+  const wasEditing = !!editingRecordId;
+  const records = getRecords();
+
+  if (editingRecordId) {
+    const idx = records.findIndex(r => r.id === editingRecordId);
+    if (idx !== -1) {
+      records[idx].shape = shape;
+      records[idx].color = color;
+      records[idx].amount = amount;
+      records[idx].time = time;
+    }
+    saveRecords(records);
+    showToast('✅ 修改成功');
+  } else {
+    records.unshift({
+      id: Date.now(),
+      type: 'poop',
+      shape: shape,
+      color: color,
+      amount: amount,
+      time: time
+    });
+    saveRecords(records);
+    showToast('✅ 记录成功');
+  }
+  editingRecordId = null;
+  showPage('page-records');
+}
+
+/* ========== 编辑记录入口 ========== */
+function editRecord(id) {
+  const records = getRecords();
+  const record = records.find(r => r.id === id);
+  if (!record) { showToast('记录不存在'); return; }
+
+  // 先重置编辑状态
+  editingRecordId = null;
+
+  if (record.type === 'milk') {
+    showPage('page-milk', true);
+    fillMilkForm(record);
+  } else if (record.type === 'supplement') {
+    showPage('page-supplement', true);
+    fillSupplementForm(record);
+  } else if (record.type === 'poop') {
+    showPage('page-poop', true);
+    fillPoopForm(record);
+  }
+}
+
+/* ========== 日期选择器 ========== */
+let selectedDateStr = ''; // 格式 'YYYY-MM-DD'
+
+function getTodayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function renderDatePicker() {
+  const container = document.getElementById('date-picker');
+  const today = new Date();
+  const dayNames = ['日','一','二','三','四','五','六'];
+  const months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+  // 生成最近30天的日期
+  let html = '';
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const weekday = dayNames[d.getDay()];
+    const day = d.getDate();
+    const month = months[d.getMonth()];
+    const isToday = i === 0;
+    const isActive = dateStr === selectedDateStr;
+
+    html += `
+      <div class="date-picker-item ${isActive ? 'active' : ''}" onclick="selectDate('${dateStr}')">
+        <div class="dp-weekday">${isToday ? '今天' : '周' + weekday}</div>
+        <div class="dp-day">${day}</div>
+        <div class="dp-month">${month}</div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  container.scrollLeft = 0;
+}
+
+function selectDate(dateStr) {
+  selectedDateStr = dateStr;
+  renderDatePicker();
+  renderRecords();
+}
+
+/* ========== 统计渲染 ========== */
+function renderStats(records) {
+  const statsContainer = document.getElementById('stats-container');
+
+  // 按选中日期筛选
+  const filtered = records.filter(r => r.time.startsWith(selectedDateStr));
+
+  // 无记录时隐藏统计区域
+  if (filtered.length === 0) {
+    statsContainer.innerHTML = '';
+    return;
+  }
+
+  // 计算统计数据
+  const milkRecords = filtered.filter(r => r.type === 'milk');
+  const poopRecords = filtered.filter(r => r.type === 'poop');
+  const supplementRecords = filtered.filter(r => r.type === 'supplement');
+
+  // 喂奶统计
+  const milkCount = milkRecords.length;
+  const milkTotal = milkRecords.reduce((sum, r) => sum + (r.amount || 0), 0);
+
+  // 便便统计
+  const poopCount = poopRecords.length;
+
+  // 补剂统计（去重类型）
+  const supplementTypes = [...new Set(supplementRecords.map(r => r.supplementType))];
+
+  // 构建统计卡片 HTML
+  let statsHTML = '';
+
+  // 喂奶统计（始终显示）
+  statsHTML += `
+    <div class="stat-card milk">
+      <div class="stat-icon">🍼</div>
+      <div class="stat-value">${milkCount}次</div>
+      <div class="stat-label">喂奶 ${milkTotal}ml</div>
+    </div>`;
+
+  // 便便统计（0次不显示）
+  if (poopCount > 0) {
+    statsHTML += `
+      <div class="stat-card poop">
+        <div class="stat-icon">💩</div>
+        <div class="stat-value">${poopCount}次</div>
+        <div class="stat-label">便便</div>
+      </div>`;
+  }
+
+  // 补剂统计（有记录才显示）
+  if (supplementTypes.length > 0) {
+    const typesText = supplementTypes.slice(0, 3).join('、') + (supplementTypes.length > 3 ? '等' : '');
+    statsHTML += `
+      <div class="stat-card supplement">
+        <div class="stat-icon">💊</div>
+        <div class="stat-value">${supplementRecords.length}次</div>
+        <div class="stat-label">补剂</div>
+        <div class="stat-types">${typesText}</div>
+      </div>`;
+  }
+
+  statsContainer.innerHTML = statsHTML;
+}
+
+/* ========== 记录列表渲染 ========== */
+function renderRecords() {
+  // 初始化日期选择器（默认今天）
+  if (!selectedDateStr) selectedDateStr = getTodayStr();
+  renderDatePicker();
+
+  const allRecords = getRecords();
+  // 按选中日期筛选
+  const records = allRecords.filter(r => r.time.startsWith(selectedDateStr));
+  const container = document.getElementById('records-list');
+  const countEl = document.getElementById('record-count');
+  countEl.textContent = `${records.length} 条`;
+
+  // 渲染统计卡片（按选中日期筛选）
+  renderStats(allRecords);
+
+  if (records.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">📝</div>
+        <p>该日期暂无记录</p>
+      </div>`;
+    return;
+  }
+
+  // 按时间倒序
+  records.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  container.innerHTML = records.map(r => {
+    const typeMap = { milk: '喂奶', supplement: '补剂', poop: '便便' };
+    const emojiMap = { milk: '🍼', supplement: '💊', poop: '💩' };
+    let detail = '';
+    if (r.type === 'milk') {
+      detail = `容量：${r.amount} ml`;
+    } else if (r.type === 'supplement') {
+      detail = `${r.supplementType} · ${r.dose} ${r.unit}`;
+    } else if (r.type === 'poop') {
+      detail = `${r.shape} · ${r.color} · ${r.amount}`;
+    }
+    return `
+      <div class="record-card">
+        <div class="action-btns">
+          <button class="action-btn edit-btn" onclick="editRecord(${r.id})">✏️</button>
+          <button class="action-btn delete-btn" onclick="deleteRecord(${r.id})">✕</button>
+        </div>
+        <span class="type-badge ${r.type}">${emojiMap[r.type]} ${typeMap[r.type]}</span>
+        <div class="detail">${detail}</div>
+        <div class="time">🕐 ${formatTime(r.time)}</div>
+      </div>`;
+  }).join('');
+}
+
+/* ========== 删除记录（使用自定义弹窗） ========== */
+function deleteRecord(id) {
+  showModal({
+    icon: '🗑️',
+    title: '确认删除',
+    msg: '确定要删除这条记录吗？删除后无法恢复。',
+    confirmText: '删除',
+    confirmColor: 'var(--danger)',
+    onConfirm: () => {
+      let records = getRecords();
+      records = records.filter(r => r.id !== id);
+      saveRecords(records);
+      renderRecords();
+      showToast('已删除');
+    }
+  });
+}
+
+/* ========== 初始化 ========== */
+document.addEventListener('DOMContentLoaded', () => {
+  initMilkPicker();
+});
+</script>
+
+</body>
+</html>

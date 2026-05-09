@@ -1,0 +1,37 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/milk/milk",
+    "pages/supplement/supplement",
+    "pages/poop/poop",
+    "pages/records/records"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FFF9F5",
+    "navigationBarTitleText": "萌娃记录",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#FFF9F5"
+  },
+  "tabBar": {
+    "color": "#888",
+    "selectedColor": "#FF8C94",
+    "backgroundColor": "#fff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页",
+        "iconPath": "images/home.png",
+        "selectedIconPath": "images/home-active.png"
+      },
+      {
+        "pagePath": "pages/records/records",
+        "text": "记录",
+        "iconPath": "images/records.png",
+        "selectedIconPath": "images/records-active.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

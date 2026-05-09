@@ -1,0 +1,23 @@
+<view class="container">
+  <view class="home-header">
+    <view class="home-title">🍼 萌娃记录</view>
+    <view class="home-subtitle">Baby Tracker · 记录宝宝每一天</view>
+  </view>
+  
+  <view class="home-buttons">
+    <view class="home-btn btn-milk" bindtap="goToMilk">
+      <view class="home-btn-icon">🍼</view>
+      <text>喂奶记录</text>
+    </view>
+    
+    <view class="home-btn btn-supplement" bindtap="goToSupplement">
+      <view class="home-btn-icon">💊</view>
+      <text>补剂记录</text>
+    </view>
+    
+    <view class="home-btn btn-poop" bindtap="goToPoop">
+      <view class="home-btn-icon">💩</view>
+      <text>便便记录</text>
+    </view>
+  </view>
+</view>

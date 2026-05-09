@@ -1,0 +1,27 @@
+<view class="container">
+  <view class="form-group">
+    <view class="form-label">容量（ml）</view>
+    <view class="picker-wrapper">
+      <view class="picker-mask picker-mask-top"></view>
+      <view class="picker-mask picker-mask-bottom"></view>
+      <view class="picker-highlight"></view>
+      <picker-view class="picker" value="{{pickerIndex}}" bindchange="onPickerChange">
+        <picker-view-column>
+          <view wx:for="{{pickerValues}}" wx:key="*this" class="picker-item {{pickerIndex[0] === index ? 'active' : ''}}">
+            {{item}}
+          </view>
+        </picker-view-column>
+      </picker-view>
+    </view>
+    <view class="picker-unit">ml</view>
+  </view>
+  
+  <view class="form-group">
+    <view class="form-label">时间</view>
+    <picker mode="multiSelector" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTimeChange" bindcolumnchange="onTimeColumnChange">
+      <view class="input-field">{{timeStr}}</view>
+    </picker>
+  </view>
+  
+  <button class="submit-btn milk" bindtap="submit">{{isEdit ? '保存修改' : '提交记录'}}</button>
+</view>

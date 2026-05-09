@@ -1,0 +1,40 @@
+<view class="container">
+  <view class="form-group">
+    <view class="form-label">补剂类型</view>
+    <view class="btn-group">
+      <view wx:for="{{supplementTags}}" wx:key="*this" 
+        class="btn-option {{selectedType === item ? 'selected' : ''}} {{canDelete(item) ? 'tag-with-delete' : ''}}"
+        bindtap="selectType" data-type="{{item}}">
+        {{item}}
+        <view wx:if="{{canDelete(item)}}" class="tag-delete" catchtap="deleteTag" data-tag="{{item}}">×</view>
+      </view>
+      <view class="btn-option add-trigger" bindtap="showAddInput">➕</view>
+    </view>
+    <view wx:if="{{showAdd}}" class="input-row">
+      <input class="input-field" placeholder="输入补剂名称" maxlength="10" value="{{newTag}}" bindinput="onTagInput"/>
+      <button class="action-btn" bindtap="addTag">添加</button>
+      <button class="action-btn cancel" bindtap="hideAddInput">取消</button>
+    </view>
+  </view>
+  
+  <view class="form-group">
+    <view class="form-label">剂量</view>
+    <view class="input-row">
+      <input class="input-field" type="digit" placeholder="数值" value="{{dose}}" bindinput="onDoseInput"/>
+      <view class="btn-group">
+        <view wx:for="{{units}}" wx:key="*this" 
+          class="btn-option {{selectedUnit === item ? 'selected' : ''}}"
+          bindtap="selectUnit" data-unit="{{item}}">{{item}}</view>
+      </view>
+    </view>
+  </view>
+  
+  <view class="form-group">
+    <view class="form-label">时间</view>
+    <picker mode="multiSelector" range="{{timeRange}}" value="{{timeIndex}}" bindchange="onTimeChange">
+      <view class="input-field">{{timeStr}}</view>
+    </picker>
+  </view>
+  
+  <button class="submit-btn supplement" bindtap="submit">{{isEdit ? '保存修改' : '提交记录'}}</button>
+</view>
