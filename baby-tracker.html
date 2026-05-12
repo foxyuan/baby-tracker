@@ -1088,8 +1088,8 @@ function showTimePicker(targetId) {
   hourScroll.scrollTop = (tpSelectedHour + 1) * TP_ITEM_H;
   minuteScroll.scrollTop = (tpSelectedMinute + 1) * TP_ITEM_H;
 
-  // 触发一次高亮
-  setTimeout(() => { onTpScroll('date'); onTpScroll('hour'); onTpScroll('minute'); }, 50);
+  // 触发一次高亮（延迟确保滚动完成）
+  setTimeout(() => { onTpScroll('date'); onTpScroll('hour'); onTpScroll('minute'); }, 150);
 
   document.getElementById('time-picker-overlay').classList.add('show');
 }
