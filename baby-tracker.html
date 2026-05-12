@@ -1039,14 +1039,17 @@ function initTimePickerColumns() {
 function onTpScroll(col) {
   const scrollId = col === 'date' ? 'tp-date-scroll' : col === 'hour' ? 'tp-hour-scroll' : 'tp-minute-scroll';
   const scroll = document.getElementById(scrollId);
-  const idx = Math.round(scroll.scrollTop / TP_ITEM_H);
+  // 减去顶部占位元素的偏移
+  const idx = Math.round(scroll.scrollTop / TP_ITEM_H) - 1;
   const items = scroll.querySelectorAll('.tp-item[data-value]');
 
-  items.forEach((item, i) => item.classList.toggle('active', i === idx));
+  // 边界检查
+  const validIdx = Math.max(0, Math.min(idx, items.length - 1));
+  items.forEach((item, i) => item.classList.toggle('active', i === validIdx));
 
-  if (col === 'date' && items[idx]) tpSelectedDate = items[idx].dataset.value;
-  if (col === 'hour' && items[idx]) tpSelectedHour = parseInt(items[idx].dataset.value);
-  if (col === 'minute' && items[idx]) tpSelectedMinute = parseInt(items[idx].dataset.value);
+  if (col === 'date' && items[validIdx]) tpSelectedDate = items[validIdx].dataset.value;
+  if (col === 'hour' && items[validIdx]) tpSelectedHour = parseInt(items[validIdx].dataset.value);
+  if (col === 'minute' && items[validIdx]) tpSelectedMinute = parseInt(items[validIdx].dataset.value);
 }
 
 function showTimePicker(targetId) {
@@ -1069,7 +1072,7 @@ function showTimePicker(targetId) {
     tpSelectedMinute = Math.round(now.getMinutes() / 5) * 5;
   }
 
-  // 滚动到对应位置
+  // 滚动到对应位置（考虑顶部占位元素）
   const dateScroll = document.getElementById('tp-date-scroll');
   const hourScroll = document.getElementById('tp-hour-scroll');
   const minuteScroll = document.getElementById('tp-minute-scroll');
@@ -1078,10 +1081,12 @@ function showTimePicker(targetId) {
   const dateItems = dateScroll.querySelectorAll('.tp-item[data-value]');
   let dateIdx = 0;
   dateItems.forEach((item, i) => { if (item.dataset.value === tpSelectedDate) dateIdx = i; });
-  dateScroll.scrollTop = dateIdx * TP_ITEM_H;
+  // 日期滚动：scrollTop 需要跳过顶部占位，所以 +1
+  dateScroll.scrollTop = (dateIdx + 1) * TP_ITEM_H;
 
-  hourScroll.scrollTop = tpSelectedHour * TP_ITEM_H;
-  minuteScroll.scrollTop = (tpSelectedMinute / 5) * TP_ITEM_H;
+  // 小时和分钟：scrollTop 需要跳过顶部占位，所以 +1
+  hourScroll.scrollTop = (tpSelectedHour + 1) * TP_ITEM_H;
+  minuteScroll.scrollTop = (tpSelectedMinute / 5 + 1) * TP_ITEM_H;
 
   // 触发一次高亮
   setTimeout(() => { onTpScroll('date'); onTpScroll('hour'); onTpScroll('minute'); }, 50);
@@ -1159,7 +1164,9 @@ function goBack() {
 function getDefaultTimeStr() {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // 分钟按 5 分钟对齐
+  const alignedMin = Math.round(now.getMinutes() / 5) * 5;
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(alignedMin)}`;
 }
 
 function setDefaultTime(inputId) {
