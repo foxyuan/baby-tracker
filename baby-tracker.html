@@ -991,7 +991,7 @@ const TP_ITEM_H = 40;
 function initTimePickerColumns() {
   // 日期列：最近60天
   const dateScroll = document.getElementById('tp-date-scroll');
-  dateScroll.innerHTML = '<div class="tp-item"></div>'; // 顶部占位
+  dateScroll.innerHTML = '';
   const today = new Date();
   for (let i = 0; i < 60; i++) {
     const d = new Date(today);
@@ -1004,11 +1004,10 @@ function initTimePickerColumns() {
     item.dataset.value = dateStr;
     dateScroll.appendChild(item);
   }
-  dateScroll.innerHTML += '<div class="tp-item"></div>'; // 底部占位
 
   // 小时列：0-23
   const hourScroll = document.getElementById('tp-hour-scroll');
-  hourScroll.innerHTML = '<div class="tp-item"></div>';
+  hourScroll.innerHTML = '';
   for (let h = 0; h < 24; h++) {
     const item = document.createElement('div');
     item.className = 'tp-item';
@@ -1016,11 +1015,10 @@ function initTimePickerColumns() {
     item.dataset.value = h;
     hourScroll.appendChild(item);
   }
-  hourScroll.innerHTML += '<div class="tp-item"></div>';
 
   // 分钟列：0-59
   const minuteScroll = document.getElementById('tp-minute-scroll');
-  minuteScroll.innerHTML = '<div class="tp-item"></div>';
+  minuteScroll.innerHTML = '';
   for (let m = 0; m < 60; m++) {
     const item = document.createElement('div');
     item.className = 'tp-item';
@@ -1028,7 +1026,6 @@ function initTimePickerColumns() {
     item.dataset.value = m;
     minuteScroll.appendChild(item);
   }
-  minuteScroll.innerHTML += '<div class="tp-item"></div>';
 
   // 监听滚动
   dateScroll.addEventListener('scroll', () => onTpScroll('date'));
@@ -1039,8 +1036,8 @@ function initTimePickerColumns() {
 function onTpScroll(col) {
   const scrollId = col === 'date' ? 'tp-date-scroll' : col === 'hour' ? 'tp-hour-scroll' : 'tp-minute-scroll';
   const scroll = document.getElementById(scrollId);
-  // 减去顶部占位元素的偏移
-  const idx = Math.round(scroll.scrollTop / TP_ITEM_H) - 1;
+  // 滚动位置直接除以 item 高度即可得到索引
+  const idx = Math.round(scroll.scrollTop / TP_ITEM_H);
   const items = scroll.querySelectorAll('.tp-item[data-value]');
 
   // 边界检查
@@ -1072,7 +1069,10 @@ function showTimePicker(targetId) {
     tpSelectedMinute = now.getMinutes();
   }
 
-  // 滚动到对应位置（考虑顶部占位元素）
+  // 滚动到对应位置
+  // 滚动区域高度 220px，指示器高度 40px，指示器中心在 (220-40)/2 = 90px
+  // 所以 scrollTop = N * 40 - 90 + 40 = N * 40 - 50
+  const centerOffset = (220 - 40) / 2; // 90px
   const dateScroll = document.getElementById('tp-date-scroll');
   const hourScroll = document.getElementById('tp-hour-scroll');
   const minuteScroll = document.getElementById('tp-minute-scroll');
@@ -1081,12 +1081,9 @@ function showTimePicker(targetId) {
   const dateItems = dateScroll.querySelectorAll('.tp-item[data-value]');
   let dateIdx = 0;
   dateItems.forEach((item, i) => { if (item.dataset.value === tpSelectedDate) dateIdx = i; });
-  // 日期滚动：scrollTop 需要跳过顶部占位，所以 +1
-  dateScroll.scrollTop = (dateIdx + 1) * TP_ITEM_H;
-
-  // 小时和分钟：scrollTop 需要跳过顶部占位，所以 +1
-  hourScroll.scrollTop = (tpSelectedHour + 1) * TP_ITEM_H;
-  minuteScroll.scrollTop = (tpSelectedMinute + 1) * TP_ITEM_H;
+  dateScroll.scrollTop = dateIdx * TP_ITEM_H;
+  hourScroll.scrollTop = tpSelectedHour * TP_ITEM_H;
+  minuteScroll.scrollTop = tpSelectedMinute * TP_ITEM_H;
 
   // 触发一次高亮（延迟确保滚动完成）
   setTimeout(() => { onTpScroll('date'); onTpScroll('hour'); onTpScroll('minute'); }, 150);
