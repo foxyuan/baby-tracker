@@ -280,19 +280,6 @@ body {
 }
 .tag-delete:active { transform: scale(0.9); background: #ff5252; }
 
-/* 时间输入 */
-input[type="datetime-local"] {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #eee;
-  border-radius: 12px;
-  font-size: 15px;
-  outline: none;
-  color: var(--text);
-  background: #fff;
-}
-input[type="datetime-local"]:focus { border-color: var(--primary); }
-
 /* 提交按钮 */
 .submit-btn {
   width: 100%;
@@ -601,6 +588,113 @@ input[type="datetime-local"]:focus { border-color: var(--primary); }
   color: #fff;
 }
 
+/* ========== 三列时间选择弹窗 ========== */
+#time-picker-overlay { display: none; align-items: flex-end; justify-content: center; }
+#time-picker-overlay.show { display: flex; }
+.time-picker-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  animation: tpSlideUp 0.3s ease;
+}
+@keyframes tpSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.time-picker-bar {
+  width: 36px;
+  height: 4px;
+  background: #ddd;
+  border-radius: 2px;
+  margin: 10px auto 0;
+}
+.time-picker-body { padding: 8px 0; }
+.time-picker-columns {
+  display: flex;
+  height: 220px;
+  position: relative;
+}
+.time-picker-col {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.time-picker-mask-top,
+.time-picker-mask-bottom {
+  position: absolute;
+  left: 0; right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 2;
+}
+.time-picker-mask-top {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.95), transparent);
+}
+.time-picker-mask-bottom {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(255,255,255,0.95), transparent);
+}
+.time-picker-indicator {
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 40px;
+  border-bottom: 1px solid #e8e8e8;
+  border-top: 1px solid #e8e8e8;
+  pointer-events: none;
+  z-index: 1;
+}
+.time-picker-scroll {
+  height: 220px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 3;
+}
+.time-picker-scroll::-webkit-scrollbar { display: none; }
+.tp-item {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #ccc;
+  scroll-snap-align: center;
+  transition: color 0.1s, font-size 0.1s;
+  white-space: nowrap;
+}
+.tp-item.active {
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+}
+.time-picker-footer {
+  display: flex;
+  border-top: 1px solid #f0f0f0;
+}
+.tp-btn {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  background: none;
+}
+.tp-btn-cancel {
+  color: #888;
+  border-right: 1px solid #f0f0f0;
+}
+.tp-btn-cancel:active { background: #f5f5f5; }
+.tp-btn-confirm {
+  color: #fff;
+  background: #07C160;
+  font-weight: 600;
+}
+.tp-btn-confirm:active { background: #06AD56; }
+
 /* ========== 底部导航占位 ========== */
 .bottom-spacer { height: 65px; }
 </style>
@@ -619,6 +713,39 @@ input[type="datetime-local"]:focus { border-color: var(--primary); }
     <div class="modal-actions">
       <button class="modal-cancel" onclick="closeModal()">取消</button>
       <button class="modal-confirm" id="modal-confirm-btn" onclick="confirmModal()">删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- 三列时间选择弹窗 -->
+<div class="modal-overlay" id="time-picker-overlay">
+  <div class="time-picker-sheet">
+    <div class="time-picker-bar"></div>
+    <div class="time-picker-body">
+      <div class="time-picker-columns">
+        <div class="time-picker-col">
+          <div class="time-picker-mask-top"></div>
+          <div class="time-picker-mask-bottom"></div>
+          <div class="time-picker-indicator"></div>
+          <div class="time-picker-scroll" id="tp-date-scroll"></div>
+        </div>
+        <div class="time-picker-col">
+          <div class="time-picker-mask-top"></div>
+          <div class="time-picker-mask-bottom"></div>
+          <div class="time-picker-indicator"></div>
+          <div class="time-picker-scroll" id="tp-hour-scroll"></div>
+        </div>
+        <div class="time-picker-col">
+          <div class="time-picker-mask-top"></div>
+          <div class="time-picker-mask-bottom"></div>
+          <div class="time-picker-indicator"></div>
+          <div class="time-picker-scroll" id="tp-minute-scroll"></div>
+        </div>
+      </div>
+    </div>
+    <div class="time-picker-footer">
+      <button class="tp-btn tp-btn-cancel" onclick="closeTimePicker()">取消</button>
+      <button class="tp-btn tp-btn-confirm" onclick="confirmTimePicker()">确定</button>
     </div>
   </div>
 </div>
@@ -668,7 +795,8 @@ input[type="datetime-local"]:focus { border-color: var(--primary); }
   </div>
   <div class="form-group">
     <label class="form-label">时间</label>
-    <input type="datetime-local" id="milk-time">
+    <input type="hidden" id="milk-time">
+    <input type="text" class="input-field" id="milk-time-display" placeholder="点击选择时间" onclick="showTimePicker('milk-time')" readonly>
   </div>
   <button class="submit-btn milk" onclick="submitMilk()">提交记录</button>
 </div>
@@ -705,7 +833,8 @@ input[type="datetime-local"]:focus { border-color: var(--primary); }
   </div>
   <div class="form-group">
     <label class="form-label">时间</label>
-    <input type="datetime-local" id="supplement-time">
+    <input type="hidden" id="supplement-time">
+    <input type="text" class="input-field" id="supplement-time-display" placeholder="点击选择时间" onclick="showTimePicker('supplement-time')" readonly>
   </div>
   <button class="submit-btn supplement" onclick="submitSupplement()">提交记录</button>
 </div>
@@ -751,7 +880,8 @@ input[type="datetime-local"]:focus { border-color: var(--primary); }
   </div>
   <div class="form-group">
     <label class="form-label">时间</label>
-    <input type="datetime-local" id="poop-time">
+    <input type="hidden" id="poop-time">
+    <input type="text" class="input-field" id="poop-time-display" placeholder="点击选择时间" onclick="showTimePicker('poop-time')" readonly>
   </div>
   <button class="submit-btn poop" onclick="submitPoop()">提交记录</button>
 </div>
@@ -850,6 +980,134 @@ function confirmModal() {
   closeModal();
 }
 
+/* ========== 三列时间选择器 ========== */
+let tpCallback = null;
+let tpTargetId = ''; // 'milk-time' / 'supplement-time' / 'poop-time'
+let tpSelectedDate = '';
+let tpSelectedHour = 0;
+let tpSelectedMinute = 0;
+const TP_ITEM_H = 40;
+
+function initTimePickerColumns() {
+  // 日期列：最近60天
+  const dateScroll = document.getElementById('tp-date-scroll');
+  dateScroll.innerHTML = '<div class="tp-item"></div>'; // 顶部占位
+  const today = new Date();
+  for (let i = 0; i < 60; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const item = document.createElement('div');
+    item.className = 'tp-item';
+    item.textContent = dateStr;
+    item.dataset.value = dateStr;
+    dateScroll.appendChild(item);
+  }
+  dateScroll.innerHTML += '<div class="tp-item"></div>'; // 底部占位
+
+  // 小时列：0-23
+  const hourScroll = document.getElementById('tp-hour-scroll');
+  hourScroll.innerHTML = '<div class="tp-item"></div>';
+  for (let h = 0; h < 24; h++) {
+    const item = document.createElement('div');
+    item.className = 'tp-item';
+    item.textContent = `${String(h).padStart(2, '0')}时`;
+    item.dataset.value = h;
+    hourScroll.appendChild(item);
+  }
+  hourScroll.innerHTML += '<div class="tp-item"></div>';
+
+  // 分钟列：0/5/10...55
+  const minuteScroll = document.getElementById('tp-minute-scroll');
+  minuteScroll.innerHTML = '<div class="tp-item"></div>';
+  for (let m = 0; m < 60; m += 5) {
+    const item = document.createElement('div');
+    item.className = 'tp-item';
+    item.textContent = `${String(m).padStart(2, '0')}分`;
+    item.dataset.value = m;
+    minuteScroll.appendChild(item);
+  }
+  minuteScroll.innerHTML += '<div class="tp-item"></div>';
+
+  // 监听滚动
+  dateScroll.addEventListener('scroll', () => onTpScroll('date'));
+  hourScroll.addEventListener('scroll', () => onTpScroll('hour'));
+  minuteScroll.addEventListener('scroll', () => onTpScroll('minute'));
+}
+
+function onTpScroll(col) {
+  const scrollId = col === 'date' ? 'tp-date-scroll' : col === 'hour' ? 'tp-hour-scroll' : 'tp-minute-scroll';
+  const scroll = document.getElementById(scrollId);
+  const idx = Math.round(scroll.scrollTop / TP_ITEM_H);
+  const items = scroll.querySelectorAll('.tp-item[data-value]');
+
+  items.forEach((item, i) => item.classList.toggle('active', i === idx));
+
+  if (col === 'date' && items[idx]) tpSelectedDate = items[idx].dataset.value;
+  if (col === 'hour' && items[idx]) tpSelectedHour = parseInt(items[idx].dataset.value);
+  if (col === 'minute' && items[idx]) tpSelectedMinute = parseInt(items[idx].dataset.value);
+}
+
+function showTimePicker(targetId) {
+  tpTargetId = targetId;
+  const input = document.getElementById(targetId);
+  const val = input.value; // YYYY-MM-DDTHH:MM
+
+  // 解析当前值
+  if (val) {
+    const [datePart, timePart] = val.split('T');
+    tpSelectedDate = datePart;
+    const [h, m] = (timePart || '0:0').split(':').map(Number);
+    tpSelectedHour = isNaN(h) ? new Date().getHours() : h;
+    tpSelectedMinute = isNaN(m) ? 0 : Math.round(m / 5) * 5;
+  } else {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    tpSelectedDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    tpSelectedHour = now.getHours();
+    tpSelectedMinute = Math.round(now.getMinutes() / 5) * 5;
+  }
+
+  // 滚动到对应位置
+  const dateScroll = document.getElementById('tp-date-scroll');
+  const hourScroll = document.getElementById('tp-hour-scroll');
+  const minuteScroll = document.getElementById('tp-minute-scroll');
+
+  // 找到日期索引
+  const dateItems = dateScroll.querySelectorAll('.tp-item[data-value]');
+  let dateIdx = 0;
+  dateItems.forEach((item, i) => { if (item.dataset.value === tpSelectedDate) dateIdx = i; });
+  dateScroll.scrollTop = dateIdx * TP_ITEM_H;
+
+  hourScroll.scrollTop = tpSelectedHour * TP_ITEM_H;
+  minuteScroll.scrollTop = (tpSelectedMinute / 5) * TP_ITEM_H;
+
+  // 触发一次高亮
+  setTimeout(() => { onTpScroll('date'); onTpScroll('hour'); onTpScroll('minute'); }, 50);
+
+  document.getElementById('time-picker-overlay').classList.add('show');
+}
+
+function closeTimePicker() {
+  document.getElementById('time-picker-overlay').classList.remove('show');
+}
+
+function confirmTimePicker() {
+  const pad = n => String(n).padStart(2, '0');
+  const isoStr = `${tpSelectedDate}T${pad(tpSelectedHour)}:${pad(tpSelectedMinute)}`;
+  document.getElementById(tpTargetId).value = isoStr;
+
+  // 更新显示框
+  const displayId = tpTargetId + '-display';
+  const display = document.getElementById(displayId);
+  if (display) {
+    display.value = `${tpSelectedDate} ${pad(tpSelectedHour)}:${pad(tpSelectedMinute)}`;
+  }
+
+  closeTimePicker();
+}
+
 // 点击遮罩层关闭
 document.getElementById('modal-overlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
@@ -905,7 +1163,14 @@ function getDefaultTimeStr() {
 }
 
 function setDefaultTime(inputId) {
-  document.getElementById(inputId).value = getDefaultTimeStr();
+  const val = getDefaultTimeStr();
+  document.getElementById(inputId).value = val;
+  // 更新显示框
+  const display = document.getElementById(inputId + '-display');
+  if (display) {
+    const [datePart, timePart] = val.split('T');
+    display.value = `${datePart} ${timePart}`;
+  }
 }
 
 function formatTime(isoStr) {
@@ -1028,6 +1293,8 @@ function fillMilkForm(record) {
   editingRecordId = record.id;
   const amount = record.amount;
   document.getElementById('milk-time').value = record.time;
+  const [dp, tp] = record.time.split('T');
+  document.getElementById('milk-time-display').value = `${dp} ${tp}`;
   selectedMilkAmount = amount;
   document.getElementById('milk-amount').value = amount;
   // 滚动到对应值
@@ -1175,6 +1442,8 @@ function fillSupplementForm(record) {
   selectedSupplementUnit = record.unit;
   document.getElementById('supplement-dose').value = record.dose;
   document.getElementById('supplement-time').value = record.time;
+  const [dp, tp] = record.time.split('T');
+  document.getElementById('supplement-time-display').value = `${dp} ${tp}`;
   // 选中匹配的单位按钮
   document.querySelectorAll('#supplement-unit-btns .btn-option').forEach(b => {
     b.classList.toggle('selected', b.textContent === record.unit);
@@ -1390,6 +1659,8 @@ function fillPoopForm(record) {
   selectedColor = record.color;
   selectedPoopAmount = record.amount;
   document.getElementById('poop-time').value = record.time;
+  const [dp, tp] = record.time.split('T');
+  document.getElementById('poop-time-display').value = `${dp} ${tp}`;
 
   // 匹配形状按钮
   renderPoopShapes();
@@ -1659,6 +1930,7 @@ function deleteRecord(id) {
 /* ========== 初始化 ========== */
 document.addEventListener('DOMContentLoaded', () => {
   initMilkPicker();
+  initTimePickerColumns();
 });
 </script>
 
