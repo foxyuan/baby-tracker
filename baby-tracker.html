@@ -1018,10 +1018,10 @@ function initTimePickerColumns() {
   }
   hourScroll.innerHTML += '<div class="tp-item"></div>';
 
-  // 分钟列：0/5/10...55
+  // 分钟列：0-59
   const minuteScroll = document.getElementById('tp-minute-scroll');
   minuteScroll.innerHTML = '<div class="tp-item"></div>';
-  for (let m = 0; m < 60; m += 5) {
+  for (let m = 0; m < 60; m++) {
     const item = document.createElement('div');
     item.className = 'tp-item';
     item.textContent = `${String(m).padStart(2, '0')}分`;
@@ -1063,13 +1063,13 @@ function showTimePicker(targetId) {
     tpSelectedDate = datePart;
     const [h, m] = (timePart || '0:0').split(':').map(Number);
     tpSelectedHour = isNaN(h) ? new Date().getHours() : h;
-    tpSelectedMinute = isNaN(m) ? 0 : Math.round(m / 5) * 5;
+    tpSelectedMinute = isNaN(m) ? 0 : m;
   } else {
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
     tpSelectedDate = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
     tpSelectedHour = now.getHours();
-    tpSelectedMinute = Math.round(now.getMinutes() / 5) * 5;
+    tpSelectedMinute = now.getMinutes();
   }
 
   // 滚动到对应位置（考虑顶部占位元素）
@@ -1086,7 +1086,7 @@ function showTimePicker(targetId) {
 
   // 小时和分钟：scrollTop 需要跳过顶部占位，所以 +1
   hourScroll.scrollTop = (tpSelectedHour + 1) * TP_ITEM_H;
-  minuteScroll.scrollTop = (tpSelectedMinute / 5 + 1) * TP_ITEM_H;
+  minuteScroll.scrollTop = (tpSelectedMinute + 1) * TP_ITEM_H;
 
   // 触发一次高亮
   setTimeout(() => { onTpScroll('date'); onTpScroll('hour'); onTpScroll('minute'); }, 50);
@@ -1164,9 +1164,7 @@ function goBack() {
 function getDefaultTimeStr() {
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
-  // 分钟按 5 分钟对齐
-  const alignedMin = Math.round(now.getMinutes() / 5) * 5;
-  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(alignedMin)}`;
+  return `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
 
 function setDefaultTime(inputId) {
