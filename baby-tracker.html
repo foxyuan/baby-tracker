@@ -2327,6 +2327,13 @@
     document.addEventListener('DOMContentLoaded', () => {
       initMilkPicker();
       initTimePickerColumns();
+
+      // 点击遮罩层关闭时间选择器
+      document.getElementById('time-picker-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'time-picker-overlay') {
+          closeTimePicker();
+        }
+      });
     });
   </script>
 
