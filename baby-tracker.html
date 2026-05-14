@@ -129,6 +129,64 @@
     .home-btn.poop {
       background: linear-gradient(135deg, #D4A5FF, #B07CFF);
     }
+    .chart-toggle-wrap {
+      text-align: center;
+      margin-top: 12px;
+    }
+    .chart-toggle-btn {
+      display: inline-block;
+      padding: 8px 20px;
+      background: #f5f0ff;
+      color: #B07CFF;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .chart-toggle-btn:active {
+      background: #ede5ff;
+    }
+
+    /* ========== 图表弹窗 ========== */
+    .chart-modal-box {
+      background: #fff;
+      border-radius: 20px;
+      padding: 20px;
+      width: 90%;
+      max-width: 360px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+      animation: modalPop 0.25s ease;
+    }
+    .chart-modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .chart-modal-header h3 {
+      font-size: 16px;
+      color: var(--text);
+      margin: 0;
+    }
+    .chart-modal-close {
+      font-size: 20px;
+      color: #999;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .chart-modal-close:active {
+      color: #666;
+    }
+    #poop-chart {
+      width: 100%;
+      height: 150px;
+    }
+    .chart-empty {
+      text-align: center;
+      color: #999;
+      padding: 40px 0;
+      font-size: 14px;
+    }
 
     /* ========== 滚动选择器 ========== */
     .scroll-picker-wrapper {
@@ -1088,6 +1146,18 @@
     </div>
   </div>
 
+  <!-- ==================== 便便规律弹窗 ==================== -->
+  <div class="modal-overlay" id="poop-chart-overlay">
+    <div class="chart-modal-box">
+      <div class="chart-modal-header">
+        <h3>📊 便便规律（近7天）</h3>
+        <span class="chart-modal-close" onclick="closePoopChart()">✕</span>
+      </div>
+      <canvas id="poop-chart" width="350" height="150"></canvas>
+      <div class="chart-empty" id="poop-chart-empty" style="display:none;">暂无记录</div>
+    </div>
+  </div>
+
   <!-- ==================== 首页 ==================== -->
   <div class="page active" id="page-home">
     <div class="home-header">
@@ -1107,6 +1177,9 @@
         <div class="icon">💩</div>
         <span>便便记录</span>
       </button>
+    </div>
+    <div class="chart-toggle-wrap">
+      <span class="chart-toggle-btn" onclick="togglePoopChart()">📊 便便规律</span>
     </div>
   </div>
 
@@ -2119,6 +2192,11 @@
         });
         saveRecords(records);
         showToast('✅ 记录成功');
+        // 只在图表弹窗显示时刷新
+        const overlay = document.getElementById('poop-chart-overlay');
+        if (overlay.classList.contains('show')) {
+          renderPoopChart();
+        }
       }
       editingRecordId = null;
       showPage('page-records');
@@ -2315,9 +2393,17 @@
         confirmColor: 'var(--danger)',
         onConfirm: () => {
           let records = getRecords();
+          const deletedRecord = records.find(r => r.id === id);
           records = records.filter(r => r.id !== id);
           saveRecords(records);
           renderRecords();
+          // 只在图表弹窗显示时刷新
+          if (deletedRecord && deletedRecord.type === 'poop') {
+            const overlay = document.getElementById('poop-chart-overlay');
+            if (overlay.classList.contains('show')) {
+              renderPoopChart();
+            }
+          }
           showToast('已删除');
         }
       });
@@ -2334,7 +2420,137 @@
           closeTimePicker();
         }
       });
+
+      // 点击遮罩层关闭图表弹窗
+      document.getElementById('poop-chart-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'poop-chart-overlay') {
+          closePoopChart();
+        }
+      });
     });
+
+    // 切换便便规律图显示
+    function togglePoopChart() {
+      const overlay = document.getElementById('poop-chart-overlay');
+      overlay.classList.add('show');
+      // 等待渲染完成后再绘制
+      requestAnimationFrame(() => {
+        renderPoopChart();
+      });
+    }
+
+    // 关闭便便规律图
+    function closePoopChart() {
+      document.getElementById('poop-chart-overlay').classList.remove('show');
+    }
+
+    // 绘制便便规律图
+    function renderPoopChart() {
+      const canvas = document.getElementById('poop-chart');
+      const emptyEl = document.getElementById('poop-chart-empty');
+      if (!canvas) {
+        console.log('[图表] canvas 不存在');
+        return;
+      }
+
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      console.log('[图表] canvas 尺寸:', rect.width, rect.height);
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+
+      // 获取最近7天数据
+      const days = 7;
+      const data = [];
+      const labels = [];
+      const today = new Date();
+
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+
+        const records = getRecords();
+        const count = records.filter(r => r.type === 'poop' && r.time.startsWith(dateStr)).length;
+        data.push(count);
+      }
+
+      console.log('[图表] 数据:', data, '标签:', labels);
+
+      // 检查是否有数据
+      const hasData = data.some(c => c > 0);
+      if (!hasData) {
+        console.log('[图表] 无数据');
+        canvas.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      canvas.style.display = 'block';
+      emptyEl.style.display = 'none';
+
+      // 绘制配置
+      const padding = { top: 20, right: 20, bottom: 30, left: 30 };
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+      const maxValue = Math.max(...data, 1);
+
+      // 清空画布
+      ctx.clearRect(0, 0, width, height);
+
+      // 绘制坐标轴
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, padding.top);
+      ctx.lineTo(padding.left, height - padding.bottom);
+      ctx.lineTo(width - padding.right, height - padding.bottom);
+      ctx.stroke();
+
+      // 绘制折线
+      ctx.strokeStyle = '#B07CFF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      data.forEach((count, i) => {
+        const x = padding.left + (i / (days - 1)) * chartWidth;
+        const y = height - padding.bottom - (count / maxValue) * chartHeight;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // 绘制数据点
+      data.forEach((count, i) => {
+        const x = padding.left + (i / (days - 1)) * chartWidth;
+        const y = height - padding.bottom - (count / maxValue) * chartHeight;
+
+        ctx.fillStyle = '#B07CFF';
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 显示数值
+        ctx.fillStyle = '#333';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(count, x, y - 8);
+      });
+
+      // 绘制日期标签
+      ctx.fillStyle = '#999';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      labels.forEach((label, i) => {
+        const x = padding.left + (i / (days - 1)) * chartWidth;
+        ctx.fillText(label, x, height - 10);
+      });
+    }
   </script>
 
 </body>
