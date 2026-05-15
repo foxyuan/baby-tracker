@@ -146,6 +146,14 @@
     .chart-toggle-btn:active {
       background: #ede5ff;
     }
+    .chart-toggle-btn.milk {
+      background: #ffeef2;
+      color: #FF8C94;
+      margin-right: 8px;
+    }
+    .chart-toggle-btn.milk:active {
+      background: #ffe0e6;
+    }
 
     /* ========== 图表弹窗 ========== */
     .chart-modal-box {
@@ -1158,6 +1166,18 @@
     </div>
   </div>
 
+  <!-- ==================== 喂奶规律弹窗 ==================== -->
+  <div class="modal-overlay" id="milk-chart-overlay">
+    <div class="chart-modal-box">
+      <div class="chart-modal-header">
+        <h3>🍼 喂奶规律（近7天）</h3>
+        <span class="chart-modal-close" onclick="closeMilkChart()">✕</span>
+      </div>
+      <canvas id="milk-chart" width="350" height="200"></canvas>
+      <div class="chart-empty" id="milk-chart-empty" style="display:none;">暂无记录</div>
+    </div>
+  </div>
+
   <!-- ==================== 首页 ==================== -->
   <div class="page active" id="page-home">
     <div class="home-header">
@@ -1179,6 +1199,7 @@
       </button>
     </div>
     <div class="chart-toggle-wrap">
+      <span class="chart-toggle-btn milk" onclick="toggleMilkChart()">🍼 喂奶规律</span>
       <span class="chart-toggle-btn" onclick="togglePoopChart()">📊 便便规律</span>
     </div>
   </div>
@@ -2427,6 +2448,13 @@
           closePoopChart();
         }
       });
+
+      // 点击遮罩层关闭喂奶规律图弹窗
+      document.getElementById('milk-chart-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'milk-chart-overlay') {
+          closeMilkChart();
+        }
+      });
     });
 
     // 切换便便规律图显示
@@ -2442,6 +2470,20 @@
     // 关闭便便规律图
     function closePoopChart() {
       document.getElementById('poop-chart-overlay').classList.remove('show');
+    }
+
+    // 切换喂奶规律图显示
+    function toggleMilkChart() {
+      const overlay = document.getElementById('milk-chart-overlay');
+      overlay.classList.add('show');
+      requestAnimationFrame(() => {
+        renderMilkChart();
+      });
+    }
+
+    // 关闭喂奶规律图
+    function closeMilkChart() {
+      document.getElementById('milk-chart-overlay').classList.remove('show');
     }
 
     // 绘制便便规律图
@@ -2540,6 +2582,119 @@
         ctx.font = '12px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(count, x, y - 8);
+      });
+
+      // 绘制日期标签
+      ctx.fillStyle = '#999';
+      ctx.font = '11px sans-serif';
+      ctx.textAlign = 'center';
+      labels.forEach((label, i) => {
+        const x = padding.left + (i / (days - 1)) * chartWidth;
+        ctx.fillText(label, x, height - 10);
+      });
+    }
+
+    // 绘制喂奶规律图
+    function renderMilkChart() {
+      const canvas = document.getElementById('milk-chart');
+      const emptyEl = document.getElementById('milk-chart-empty');
+      if (!canvas) return;
+
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.scale(dpr, dpr);
+
+      const width = rect.width;
+      const height = rect.height;
+
+      // 获取最近7天数据
+      const days = 7;
+      const milkData = [];
+      const labels = [];
+      const today = new Date();
+
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
+
+        const records = getRecords();
+        const dayRecords = records
+          .filter(r => r.type === 'milk' && r.time.startsWith(dateStr))
+          .map(r => {
+            const hour = parseInt(r.time.split('T')[1].split(':')[0]);
+            return hour;
+          })
+          .sort((a, b) => a - b);
+        milkData.push(dayRecords);
+      }
+
+      // 检查是否有数据
+      const hasData = milkData.some(arr => arr.length > 0);
+      if (!hasData) {
+        canvas.style.display = 'none';
+        emptyEl.style.display = 'block';
+        return;
+      }
+
+      canvas.style.display = 'block';
+      emptyEl.style.display = 'none';
+
+      // 绘制配置
+      const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+      const chartWidth = width - padding.left - padding.right;
+      const chartHeight = height - padding.top - padding.bottom;
+
+      // 清空画布
+      ctx.clearRect(0, 0, width, height);
+
+      // 绘制坐标轴
+      ctx.strokeStyle = '#e0e0e0';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padding.left, padding.top);
+      ctx.lineTo(padding.left, height - padding.bottom);
+      ctx.lineTo(width - padding.right, height - padding.bottom);
+      ctx.stroke();
+
+      // 绘制Y轴刻度（0-24小时）
+      ctx.fillStyle = '#999';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      for (let h = 0; h <= 24; h += 6) {
+        const y = height - padding.bottom - (h / 24) * chartHeight;
+        ctx.fillText(h + 'h', padding.left - 5, y + 3);
+        // 绘制网格线
+        ctx.strokeStyle = '#f0f0f0';
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(width - padding.right, y);
+        ctx.stroke();
+      }
+
+      // 绘制每天的喂奶时间点
+      milkData.forEach((hours, dayIndex) => {
+        const x = padding.left + (dayIndex / (days - 1)) * chartWidth;
+
+        hours.forEach(hour => {
+          const y = height - padding.bottom - (hour / 24) * chartHeight;
+
+          // 绘制点
+          ctx.fillStyle = '#FF8C94';
+          ctx.beginPath();
+          ctx.arc(x, y, 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // 显示时间
+          ctx.fillStyle = '#333';
+          ctx.font = '10px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(hour + ':00', x, y - 8);
+        });
       });
 
       // 绘制日期标签
